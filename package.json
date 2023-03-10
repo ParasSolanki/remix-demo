@@ -8,6 +8,7 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@fontsource/inter": "^4.5.15",
     "@heroicons/react": "^2.0.16",
     "@prisma/client": "^4.11.0",
     "@radix-ui/react-tabs": "^1.0.2",

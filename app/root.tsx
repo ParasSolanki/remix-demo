@@ -13,6 +13,7 @@ import Nprogress from "nprogress";
 
 import stylesheet from "~/index.css";
 import nprogressStyles from "nprogress/nprogress.css";
+import interStyles from "@fontsource/inter/index.css";
 
 export const links: LinksFunction = () => [
   {
@@ -22,6 +23,10 @@ export const links: LinksFunction = () => [
   {
     rel: "stylesheet",
     href: nprogressStyles,
+  },
+  {
+    rel: "stylesheet",
+    href: interStyles,
   },
 ];
 

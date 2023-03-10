@@ -4,9 +4,16 @@ import {
   type LoaderArgs,
   type MetaFunction,
 } from "@remix-run/node";
-import { Form, Link, useLoaderData } from "@remix-run/react";
+import { Form, Link, useLoaderData, useTransition } from "@remix-run/react";
+import {
+  EyeIcon,
+  EyeSlashIcon,
+  LockClosedIcon,
+} from "@heroicons/react/24/solid";
+import SpinnerIcon from "~/components/SpinnerIcon";
 import { authenticator } from "~/services/auth.server";
 import { getSession } from "~/services/session.server";
+import { useState } from "react";
 
 export const meta: MetaFunction = () => ({
   title: "Register",
@@ -44,10 +51,12 @@ export async function loader({ request }: LoaderArgs) {
 // First we create our UI with the form doing a POST and the inputs with the
 // names we are going to use in the strategy
 export default function RegisterPage() {
+  const [showPassword, setShowPassword] = useState(false);
   const data = useLoaderData<typeof loader>();
+  const transition = useTransition();
 
   return (
-    <section className="mx-auto w-full max-w-xl">
+    <>
       <h2 className="mb-4 text-4xl font-bold text-slate-300">Register</h2>
 
       <Form method="post" className="flex flex-col space-y-4">
@@ -93,18 +102,40 @@ export default function RegisterPage() {
           <label htmlFor="password" className="font-medium">
             Password
           </label>
-          <input
-            id="password"
-            type="password"
-            name="password"
-            className="mt-1 block w-full rounded-md border-2 border-slate-700 bg-slate-800/90 p-2 text-slate-200 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-sky-500 sm:text-sm"
-          />
+          <div className="relative mt-1 overflow-hidden rounded-md border-2 border-slate-700 bg-slate-800/90 text-slate-200 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-sky-500">
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              name="password"
+              className="block w-full border-none bg-inherit pr-9 text-base"
+            />
+            <button
+              type="button"
+              className="-z-1 absolute top-1/2 right-0 flex h-full w-9 -translate-y-1/2 items-center justify-center px-2 hover:bg-slate-700 focus:bg-slate-700 focus:outline-none"
+              onClick={() => setShowPassword((prev) => !prev)}
+            >
+              {showPassword ? (
+                <EyeIcon className="h-5 w-5" />
+              ) : (
+                <EyeSlashIcon className="h-5 w-5" />
+              )}
+            </button>
+          </div>
         </div>
         <button
           type="submit"
-          className="highlight-white/20 block w-full rounded-lg bg-sky-500 px-4 py-2 text-lg font-semibold text-white hover:bg-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-900"
+          disabled={transition.state === "submitting"}
+          className="highlight-white/20 relative block w-full rounded-lg bg-sky-500 px-4 py-2 text-lg font-semibold text-white shadow-md hover:bg-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:bg-sky-500/60 disabled:text-white/60"
         >
+          <span className="absolute top-1/2 left-0 flex h-full w-10 -translate-y-1/2 items-center justify-center">
+            <LockClosedIcon className="h-5 w-5 fill-white/50" />
+          </span>
           Register
+          {transition.state === "submitting" ? (
+            <span className="absolute top-1/2 right-0 flex h-full w-10 -translate-y-1/2 items-center justify-center">
+              <SpinnerIcon />
+            </span>
+          ) : null}
         </button>
       </Form>
 
@@ -114,6 +145,6 @@ export default function RegisterPage() {
           Login
         </Link>
       </p>
-    </section>
+    </>
   );
 }
