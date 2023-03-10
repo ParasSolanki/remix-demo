@@ -12,11 +12,21 @@ const sidebarItems = [
   },
 ];
 
-export default function Sidebar() {
+type SidebarProps = {
+  open: boolean;
+};
+
+export default function Sidebar({ open }: SidebarProps) {
   const location = useLocation();
 
   return (
-    <aside className="sticky top-0 h-screen w-full bg-slate-800/50 shadow-2xl">
+    <aside
+      className={classNames(
+        "sticky top-0  h-screen w-full bg-slate-800/50 shadow-2xl",
+        { block: open },
+        { hidden: !open }
+      )}
+    >
       <nav>
         <ul className="flex flex-col space-y-2 p-4">
           {sidebarItems.map((item) => (
