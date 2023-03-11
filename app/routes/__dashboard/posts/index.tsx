@@ -1,15 +1,17 @@
 import classnames from "classnames";
-import { Suspense, useState } from "react";
+import { useRef, useState } from "react";
 import {
   type ActionArgs,
   redirect,
-  defer,
   json,
   type MetaFunction,
 } from "@remix-run/node";
-import { Await, Form, useActionData, useLoaderData } from "@remix-run/react";
-import { createPost, getPosts } from "~/models/post";
-import { BlogPosts, BlogPostSkeleton } from "~/components/Posts";
+import { Form, Link, useActionData, useLoaderData } from "@remix-run/react";
+import { createPost, postSchemas } from "~/models/post.model";
+import { BlogPosts } from "~/components/Posts";
+import { getPosts } from "~/models/post.model";
+import { authenticator } from "~/services/auth.server";
+import useAuthUser from "~/hooks/use-auth-user";
 
 export const meta: MetaFunction = () => ({
   title: "Posts",
@@ -17,51 +19,80 @@ export const meta: MetaFunction = () => ({
 });
 
 export const loader = async () => {
-  const posts = getPosts();
+  const posts = await getPosts();
 
-  return defer(
+  return json(
     { posts },
     {
       headers: {
-        "Cache-Control": "max-age=300, stale-while-revalidate=60",
+        "Cache-Control": "max-age=60, stale-while-revalidate=120",
       },
     }
   );
 };
 
 export const action = async ({ request }: ActionArgs) => {
+  await authenticator.isAuthenticated(request, { failureRedirect: "/" });
+
   const form = await request.formData();
+  const action = form.get("action");
 
-  const title = form.get("title");
-  const body = form.get("body");
-  const errors = {} as { title?: string; body?: string };
-
-  if (typeof title !== "string" || !title) {
-    errors["title"] = "title is required";
+  if (typeof action !== "string" && !action) {
+    return json(
+      {
+        okay: false,
+        errors: { action: { message: "Action not defined" } },
+      },
+      { status: 400 }
+    );
   }
 
-  if (typeof body !== "string" || !title) {
-    errors["body"] = "body is required";
+  if (action === "create-post") {
+    const result = postSchemas.CREATE.safeParse(Object.fromEntries(form));
+
+    if (!result.success) {
+      const formatedError = result.error.issues
+        .map((issue) => ({
+          [issue.path[0]]: { message: issue.message },
+        }))
+        .reduce((acc, issue) => Object.assign(acc, issue), {});
+
+      return json({ okay: false, errors: formatedError }, { status: 400 });
+    }
+
+    const { error } = await createPost(result.data);
+
+    if (error) {
+      return json({ errors: error, okay: false } as const, { status: 400 });
+    }
+
+    return json({ okay: true } as const, { status: 201 });
   }
 
-  if (Object.keys(errors).length) {
-    return json(errors, { status: 400 });
-  }
-
-  await createPost({
-    title,
-    body,
-    userId: 1,
-  });
-
-  return redirect("/");
+  return json({});
 };
 
-function NewPostForm() {
-  const errors = useActionData<typeof action>();
+function NewPostForm(props: { onSuccess?: () => void }) {
+  const user = useAuthUser();
+  const formRef = useRef<HTMLFormElement>(null);
+  const actionData = useActionData<typeof action>();
+
+  const errors = actionData ? actionData.errors : {};
+  const success = actionData ? actionData.okay === true : false;
+
+  if (success && typeof props.onSuccess === "function") {
+    formRef.current?.reset();
+    props.onSuccess();
+  }
 
   return (
-    <Form method="post" className="my-4 space-y-3">
+    <Form
+      ref={formRef}
+      method="post"
+      action="/posts"
+      className="my-4 space-y-3"
+    >
+      <input type="hidden" name="authorId" value={user?.id} />
       <div>
         <label
           htmlFor="title"
@@ -71,7 +102,7 @@ function NewPostForm() {
         </label>
         <div className="mt-1">
           <input
-            type={"text"}
+            type="text"
             id="title"
             name="title"
             className={classnames(
@@ -84,38 +115,70 @@ function NewPostForm() {
             defaultValue={""}
           />
           {errors?.title ? (
-            <span className="text-sm text-red-500">{errors.title}</span>
+            <span className="text-sm text-red-500">
+              {errors?.title.message}
+            </span>
           ) : null}
         </div>
       </div>
       <div>
         <label
-          htmlFor="body"
+          htmlFor="slug"
           className="block text-sm font-medium text-slate-300"
         >
-          Body
+          Slug
+        </label>
+        <div className="mt-1">
+          <input
+            type="text"
+            id="slug"
+            name="slug"
+            className={classnames(
+              "mt-1 block w-full rounded-md border-2 border-slate-700 bg-slate-800/90 p-3 text-slate-200 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-sky-500 sm:text-sm",
+              {
+                "focus:border-red-500": errors?.slug,
+              }
+            )}
+            placeholder="Post slug goes here..."
+            defaultValue={""}
+          />
+          {errors?.slug ? (
+            <span className="text-sm text-red-500">{errors?.slug.message}</span>
+          ) : null}
+        </div>
+      </div>
+      <div>
+        <label
+          htmlFor="content"
+          className="block text-sm font-medium text-slate-300"
+        >
+          Content
         </label>
         <div className="mt-1">
           <textarea
-            id="body"
-            name="body"
+            id="content"
+            name="content"
             rows={3}
             className={classnames(
               "mt-1 block w-full rounded-md border-2 border-slate-700 bg-slate-800/90 p-3 text-slate-200 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-sky-500 sm:text-sm",
               {
-                "focus:border-red-500": errors?.body,
+                "focus:border-red-500": errors?.content,
               }
             )}
-            placeholder="Post body goes here..."
+            placeholder="Post content goes here..."
             defaultValue={""}
           />
-          {errors?.body ? (
-            <span className="text-sm text-red-500">{errors.body}</span>
+          {errors?.content ? (
+            <span className="text-sm text-red-500">
+              {errors?.content.message}
+            </span>
           ) : null}
         </div>
       </div>
       <button
         type="submit"
+        name="action"
+        value="create-post"
         className="highlight-white/20 flex w-full items-center justify-center rounded-lg border-2 border-sky-400 px-4 py-1.5 text-sm font-semibold text-sky-400 hover:bg-sky-400 hover:text-white focus:bg-sky-400 focus:text-white focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-900 sm:w-auto"
       >
         Add
@@ -141,11 +204,29 @@ export default function PostsPage() {
         </button>
       </div>
 
-      {isNewPostFormOpen && <NewPostForm />}
+      {isNewPostFormOpen && (
+        <NewPostForm onSuccess={() => setIsNewPostFormOpen(false)} />
+      )}
 
-      <Suspense fallback={<BlogPostSkeleton />}>
-        <Await resolve={posts}>{(posts) => <BlogPosts posts={posts} />}</Await>
-      </Suspense>
+      {posts.length > 0 ? (
+        <ul className="mt-4 space-y-3">
+          {posts.map((post) => (
+            <li key={post.id}>
+              <Link
+                to={`/posts/${post.slug}`}
+                className="block space-y-2 rounded-md p-4 hover:bg-slate-800/70"
+              >
+                <span className="text-2xl font-semibold leading-tight text-sky-500">
+                  {post.title}
+                </span>
+                <p className="text-sm text-slate-500">{post.content}</p>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        "No Posts found"
+      )}
     </section>
   );
 }

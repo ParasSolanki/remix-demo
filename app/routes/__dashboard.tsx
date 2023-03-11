@@ -4,7 +4,7 @@ import Sidebar from "~/components/Sidebar";
 import { getSession } from "~/services/session.server";
 import { authenticator, type AuthUser } from "~/services/auth.server";
 import { ArrowRightIcon, Bars3CenterLeftIcon } from "@heroicons/react/24/solid";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import classNames from "classnames";
 
 export async function loader({ request }: LoaderArgs) {
