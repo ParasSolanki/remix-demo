@@ -1,4 +1,4 @@
-import { type ActionArgs, Response } from "@remix-run/node";
+import { type ActionArgs, Response, redirect } from "@remix-run/node";
 import { authenticator } from "~/services/auth.server";
 
 export async function action({ request }: ActionArgs) {
@@ -10,4 +10,8 @@ export async function action({ request }: ActionArgs) {
   // then based on do logout..
 
   await authenticator.logout(request, { redirectTo: "/login" });
+}
+
+export function loader() {
+  return redirect("/");
 }

@@ -1,21 +1,15 @@
 import classnames from "classnames";
 import { useRef, useState } from "react";
-import {
-  type ActionArgs,
-  redirect,
-  json,
-  type MetaFunction,
-} from "@remix-run/node";
+import { type ActionArgs, json, type MetaFunction } from "@remix-run/node";
 import { Form, Link, useActionData, useLoaderData } from "@remix-run/react";
 import { createPost, postSchemas } from "~/models/post.model";
-import { BlogPosts } from "~/components/Posts";
 import { getPosts } from "~/models/post.model";
 import { authenticator } from "~/services/auth.server";
 import useAuthUser from "~/hooks/use-auth-user";
 
 export const meta: MetaFunction = () => ({
   title: "Posts",
-  description: "List of all available posts from jsonplaceholder API",
+  description: "List of all available posts",
 });
 
 export const loader = async () => {
