@@ -15,7 +15,7 @@ export const postSchemas = {
 export async function getPosts() {
   try {
     return await prisma.post.findMany({
-      where: { publishedAt: null },
+      orderBy: { createdAt: "desc" },
       select: {
         id: true,
         title: true,
@@ -23,9 +23,9 @@ export async function getPosts() {
         content: true,
         createdAt: true,
         updatedAt: true,
+        publishedAt: true,
         author: { select: { firstName: true, lastName: true } },
       },
-      orderBy: { createdAt: "desc" },
     });
   } catch (e) {
     throw e;
@@ -48,6 +48,36 @@ export async function createPost(data: z.infer<typeof createPostSchema>) {
         authorId: data.authorId,
       },
     });
+    return { data: post, error: undefined };
+  } catch (e) {
+    throw { data: undefined, error: e };
+  }
+}
+
+export async function getPostDetailsBySlug(slug: string) {
+  try {
+    const post = await prisma.post.findFirst({
+      where: { AND: [{ slug }, { NOT: { publishedAt: null } }] },
+      include: {
+        comments: {
+          take: 10,
+          orderBy: {
+            createdAt: "desc",
+          },
+          select: {
+            createdAt: true,
+            text: true,
+            author: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
     return { data: post, error: undefined };
   } catch (e) {
     throw { data: undefined, error: e };

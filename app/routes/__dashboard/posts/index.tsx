@@ -185,6 +185,9 @@ export default function PostsPage() {
   const { posts } = useLoaderData<typeof loader>();
   const [isNewPostFormOpen, setIsNewPostFormOpen] = useState(false);
 
+  const publishedPosts = posts.filter((post) => post.publishedAt);
+  const unpublishedPosts = posts.filter((post) => !post.publishedAt);
+
   return (
     <section>
       <div className="flex items-center justify-between">
@@ -202,25 +205,62 @@ export default function PostsPage() {
         <NewPostForm onSuccess={() => setIsNewPostFormOpen(false)} />
       )}
 
-      {posts.length > 0 ? (
-        <ul className="mt-4 space-y-3">
-          {posts.map((post) => (
-            <li key={post.id}>
-              <Link
-                to={`/posts/${post.slug}`}
-                className="block space-y-2 rounded-md p-4 hover:bg-slate-800/70"
-              >
-                <span className="text-2xl font-semibold leading-tight text-sky-500">
-                  {post.title}
-                </span>
-                <p className="text-sm text-slate-500">{post.content}</p>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        "No Posts found"
-      )}
+      <div className="mt-4 space-y-4">
+        <div className="">
+          <h5 className="mb-4 text-3xl font-semibold text-slate-300">
+            Published Posts
+          </h5>
+          {publishedPosts.length > 0 ? (
+            <ul className="space-y-3">
+              {posts.map((post) => (
+                <li key={post.id}>
+                  <Link
+                    to={`/posts/${post.slug}`}
+                    className="block space-y-2 rounded-md p-4 hover:bg-slate-800/70"
+                  >
+                    <span className="text-2xl font-semibold leading-tight text-sky-500">
+                      {post.title}
+                    </span>
+                    <p className="text-sm text-slate-500">{post.content}</p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="py-2">
+              <p className="text-base font-medium">
+                You have not published any posts yet!
+              </p>
+            </div>
+          )}
+        </div>
+        <div className="">
+          <h5 className="mb-4 text-3xl font-semibold text-slate-300">
+            Unpublished Posts
+          </h5>
+          {unpublishedPosts.length > 0 ? (
+            <ul className="space-y-3">
+              {posts.map((post) => (
+                <li
+                  key={post.id}
+                  className="block space-y-2 rounded-md p-4 hover:bg-slate-800/70"
+                >
+                  <span className="text-2xl font-semibold leading-tight text-sky-500">
+                    {post.title}
+                  </span>
+                  <p className="text-sm text-slate-500">{post.content}</p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="py-2">
+              <p className="text-base font-medium">
+                You have not published any posts yet!
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
     </section>
   );
 }

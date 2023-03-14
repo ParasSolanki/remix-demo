@@ -3,9 +3,9 @@ import type { LoaderArgs } from "@remix-run/node";
 import type { Comment } from "~/types";
 import { Await, Link, useLoaderData } from "@remix-run/react";
 import { Suspense } from "react";
-import { getPost } from "~/models/post";
-import { getPostComments } from "~/models/comments";
+
 import { ArrowLeftIcon } from "@heroicons/react/24/solid";
+import { getPostDetailsBySlug } from "~/models/post.model";
 
 export const meta: MetaFunction<Awaited<typeof loader>> = ({ data }) => {
   if (!data) {
@@ -17,22 +17,24 @@ export const meta: MetaFunction<Awaited<typeof loader>> = ({ data }) => {
 
   return {
     title: data.post.title,
-    description: data.post.body,
+    description: data.post.content,
   };
 };
 
 export const loader = async ({ params }: LoaderArgs) => {
-  const post = await getPost(params.postId!);
-  const comments = getPostComments(params.postId!);
+  const { data: post } = await getPostDetailsBySlug(params.slug!);
+
+  if (!post) {
+    throw new Response("Not Found", { status: 404 });
+  }
 
   return defer(
     {
       post,
-      comments,
     },
     {
       headers: {
-        "Cache-Control": "max-age=180, stale-while-revalidate=30",
+        "Cache-Control": "max-age=60, stale-while-revalidate=120",
       },
     }
   );
@@ -58,26 +60,8 @@ function CommentsSkeleton() {
   );
 }
 
-function Comments({ comments }: { comments: Comment[] }) {
-  return (
-    <ul className="mt-2 space-y-3">
-      {comments.map((comment) => (
-        <li key={comment.id} className="block space-y-1 rounded-md py-2 px-4">
-          <span className="flex items-center justify-between">
-            <span className="text-base font-semibold text-slate-400">
-              {comment.name}
-            </span>
-            <span className="text-xs">by {comment.email}</span>
-          </span>
-          <p className="text-sm text-slate-500">{comment.body}</p>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 export default function PostDetailsPage() {
-  const { post, comments } = useLoaderData<typeof loader>();
+  const { post } = useLoaderData<typeof loader>();
 
   return (
     <section>
@@ -92,23 +76,54 @@ export default function PostDetailsPage() {
       <Suspense fallback="loading...">
         <Await resolve={post}>
           {(post) => (
-            <article className="my-4">
-              <h2 className="text-4xl font-bold capitalize text-sky-400">
-                {post.title}
-              </h2>
-              <p className="my-6 text-lg text-slate-400">{post.body}</p>
-            </article>
+            <>
+              <article className="my-4">
+                <h2 className="text-4xl font-bold capitalize text-sky-400">
+                  {post.title}
+                </h2>
+                <p className="my-6 text-lg text-slate-400">{post.content}</p>
+              </article>
+
+              <div className="my-10">
+                <h4 className="text-3xl font-bold text-slate-300">Comments</h4>
+
+                {post.comments.length > 0 ? (
+                  <ul className="mt-2 space-y-3">
+                    {post.comments.map((comment) => (
+                      <li
+                        key={comment.createdAt}
+                        className="block space-y-1 rounded-md py-2 px-4"
+                      >
+                        <span className="flex items-center justify-between">
+                          <span className="text-xs">
+                            by{" "}
+                            {`${comment.author.firstName} ${comment.author.lastName}`}
+                          </span>
+                        </span>
+                        <p className="text-sm text-slate-500">{comment.text}</p>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div>
+                    <p className="text-base font-medium text-slate-500">
+                      No one has commented yet.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </Await>
       </Suspense>
-      <div className="my-10">
+      {/* <div className="my-10">
         <h4 className="text-3xl font-bold text-slate-300">Comments</h4>
         <Suspense fallback={<CommentsSkeleton />}>
           <Await resolve={comments}>
             {(comments) => <Comments comments={comments} />}
           </Await>
         </Suspense>
-      </div>
+      </div> */}
     </section>
   );
 }
