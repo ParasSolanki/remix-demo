@@ -48,7 +48,7 @@ export default function App() {
   }, [transition.state]);
 
   return (
-    <html lang="en">
+    <html lang="en" data-theme="dark" style={{ colorScheme: "dark" }}>
       <head>
         <Meta />
         <Links />

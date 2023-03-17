@@ -1,11 +1,13 @@
-import classnames from "classnames";
 import { useRef, useState } from "react";
+import classnames from "classnames";
 import { type ActionArgs, json, type MetaFunction } from "@remix-run/node";
 import { Form, Link, useActionData, useLoaderData } from "@remix-run/react";
+import * as Select from "@radix-ui/react-select";
 import { createPost, postSchemas } from "~/models/post.model";
 import { getPosts } from "~/models/post.model";
 import { authenticator } from "~/services/auth.server";
 import useAuthUser from "~/hooks/use-auth-user";
+import { CheckIcon, ChevronDownIcon } from "@heroicons/react/24/solid";
 
 export const meta: MetaFunction = () => ({
   title: "Posts",
@@ -184,6 +186,7 @@ function NewPostForm(props: { onSuccess?: () => void }) {
 export default function PostsPage() {
   const { posts } = useLoaderData<typeof loader>();
   const [isNewPostFormOpen, setIsNewPostFormOpen] = useState(false);
+  const [postFilter, setPostsFilter] = useState("");
 
   const publishedPosts = posts.filter((post) => post.publishedAt);
   const unpublishedPosts = posts.filter((post) => !post.publishedAt);
@@ -199,6 +202,53 @@ export default function PostsPage() {
         >
           {isNewPostFormOpen ? "Close" : "New"}
         </button>
+      </div>
+
+      <div className="mt-4" id="container">
+        <Select.Root
+          value={postFilter}
+          onValueChange={(val) => setPostsFilter(val)}
+        >
+          <Select.Trigger
+            className="inline-flex h-9 w-28 items-center justify-between gap-[5px] rounded border-2 border-slate-700 bg-slate-800 px-3 text-sm leading-none text-slate-300 outline-none hover:bg-slate-800/50 focus:border-sky-400 focus:outline-none data-[placeholder]:text-slate-700 "
+            aria-label="Posts filter"
+          >
+            <Select.Value placeholder="Select a Filter" />
+            <Select.Icon className="flex h-full items-center">
+              <ChevronDownIcon className="h-4 w-4" />
+            </Select.Icon>
+          </Select.Trigger>
+          <Select.Portal className="w-full">
+            <Select.Content
+              className="w-28 rounded-sm bg-slate-800 py-1 shadow-md"
+              position="popper"
+              sideOffset={10}
+            >
+              <Select.Viewport>
+                <Select.Group className="w-full">
+                  <Select.Item
+                    value="Published"
+                    className="relative flex select-none items-center py-3 px-6 leading-none text-slate-300 hover:bg-slate-900 hover:text-slate-300 hover:outline-none data-[disabled]:pointer-events-none data-[highlighted]:bg-slate-900 data-[disabled]:text-slate-300/30 data-[highlighted]:text-sky-400 data-[highlighted]:outline-none"
+                  >
+                    <Select.ItemText>Published</Select.ItemText>
+                    <Select.ItemIndicator className="absolute left-0 inline-flex w-6 items-center justify-center">
+                      <CheckIcon className="h-4 w-4" />
+                    </Select.ItemIndicator>
+                  </Select.Item>
+                  <Select.Item
+                    value="Draft"
+                    className="relative flex select-none items-center py-3 px-6 leading-none text-slate-300 hover:bg-slate-900 hover:text-slate-300 hover:outline-none data-[disabled]:pointer-events-none data-[highlighted]:bg-slate-900 data-[disabled]:text-slate-300/30 data-[highlighted]:text-sky-400 data-[highlighted]:outline-none"
+                  >
+                    <Select.ItemText>Draft</Select.ItemText>
+                    <Select.ItemIndicator className="absolute left-0 inline-flex w-[25px] items-center justify-center">
+                      <CheckIcon className="h-4 w-4" />
+                    </Select.ItemIndicator>
+                  </Select.Item>
+                </Select.Group>
+              </Select.Viewport>
+            </Select.Content>
+          </Select.Portal>
+        </Select.Root>
       </div>
 
       {isNewPostFormOpen && (
